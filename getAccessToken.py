@@ -1,12 +1,14 @@
 import requests as nq
+import os, sys
 
+path = os.path.dirname(os.path.realpath(__file__))
 netAdress = '180.101.147.89'
 port = '8743'
 
 appID = '4CFpzk3vFme73dJCogtqac6H1EIa'
 secret = '6c1qCXEzcp0F0l47iWtvuLYsqlwa'
 cert = (
-    'D:\智慧热网\\2018\getdata\dianxin\dianxin\cert\client.crt', 'D:\智慧热网\\2018\getdata\dianxin\dianxin\cert\client.key')
+    path + '\cert\client.crt', path + '\cert\client.key')
 
 
 def conectIoT(appID, secret, cert, netAdress='180.101.147.89', port='8743'):
@@ -60,17 +62,26 @@ def refreshVerifyCode(appID, nodeId, accessToken, cert, netAdress='180.101.147.8
     return d
 
 
-def modfyDevice(appID, nodeId, accessToken, cert, netAdress='180.101.147.89', port='8743'):
+def modfyDevice(appID, deviceId, accessToken, cert, netAdress='180.101.147.89', port='8743'):
     """"修改设备"""
-    return
+    url = "https://" + netAdress + ":" + port + "/iocm/app/reg/v1.1.0/deviceCredentials/" + deviceId + "?appId=" + appID
+    itemHeaders = {"app_key": appID, "Authorization": "Bearer " + accessToken}
+    r = nq.put(url=url, headers=itemHeaders, cert=cert, verify=False)
+    if r.status_code == 204:  # 修改后，如果返回的status code值为204，则返回修改成功，否则返回修改失败
+        return True
+    else:
+        return False
 
 
 def deleteDevice(appID, accessToken, deviceId, cert, netAdress='180.101.147.89', port='8743'):
-    """"""
+    """删除设备"""
     url = "https://" + netAdress + ":" + port + "/iocm/app/dm/v1.4.0/devices/" + deviceId + "?"
     itemHeaders = {"app_key": appID, "Authorization": "Bearer " + accessToken}
-    r = nq.delete(url=url, headers=itemHeaders, cert=cert)
-    return eval(r.text)
+    r = nq.delete(url=url, headers=itemHeaders, cert=cert, verify=False)
+    if r.status_code == 204:  # 如果返回status code值为204，返回删除成功，否则返回删除失败
+        return True
+    else:
+        return False
 
 
 def getDeviceHistoryData(appID, accessToken, deviceID, gateWayId, cert, netAdress='180.101.147.89', port='8743'):
@@ -102,14 +113,14 @@ def getDeviceMsg(appID, accessToken, deviceID, cert, netAdress='180.101.147.89',
     ‘deviceInfo’：设备信息
     ‘services’：设备服务列表
     """
-    url = "https://" + netAdress + ":" + port + "/iocm/app/dm/v1.4.0/devices/" + deviceId + "?" + "appId=" + appID
+    url = "https://" + netAdress + ":" + port + "/iocm/app/dm/v1.4.0/devices/" + deviceID + "?" + "appId=" + appID
     itemHeaders = {"app_key": appID, "Authorization": "Bearer " + accessToken, "Content-Type": "applicaton/json"}
     r = nq.get(url, headers=itemHeaders, cert=cert, verify=False)
     data = eval(r.text)
     return data
 
 
-def getDeviceService(appID, accessToken, deviceID, cert, netAdress='180.101.147.89', port='8743'):
+def get_device_service(app_id, access_token, device_id, cert, net_address='180.101.147.89', port='8743'):
     """
     获取设备服务信息
     “deviceCapabilitys” ：设备能力 为list，只有一个子项，子项为dic包括
@@ -125,11 +136,23 @@ def getDeviceService(appID, accessToken, deviceID, cert, netAdress='180.101.147.
         }
     """
     url = "https://" + netAdress + ":" + port + "/iocm/app/data/v1.1.0/deviceCapabilities?"
-    key = {"deviceId": deviceID, "gatewayId": deviceID, "appId": appID}
-    itemHeaders = {"app_key": appID, "Authorization": "Bearer " + accessToken, "Content-Type": "applicaton/json"}
-    r = nq.get(url=url, params=key, cert=cert, headers=itemHeaders, verify=False)
+    key = {"deviceId": device_id, "gatewayId": device_id, "appId": app_id}
+    item_headers = {"app_key": app_id, "Authorization": "Bearer " + access_token, "Content-Type": "applicaton/json"}
+    r = nq.get(url=url, params=key, cert=cert, headers=item_headers, verify=False)
     data = eval(r.text)
     return data
 
 
-def
+def send_command(app_key, access_token, cert, device_id, command, net_address='180.101.147.89', port='8743'):
+    """"
+    下发命令
+    需要输入参数appId，accessToken，cert(证书)，deviceId,command(字典类型)
+    """
+    url = "https://" + net_address + ":" + port + "/iocm/app/cmd/v1.4.0/deviceCommands"
+    key = {"deviceId": device_id, "command": command}
+    item_headers = {"app_key": app_key, "Authorization": "Bearer " + access_token, "Content-Type": "applicaton/json"}
+    r = nq.post(url=url, headers=item_headers, params=key, cert=cert, verify=False)
+    if r.status_code == 201:
+        return True
+    else:
+        return False
